@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <title>Trashman</title>
+  </head>
+  <body>
+    <h1>Wassup</h1>
+    <div id="my_camera"></div>
+    <form>
+  		<input type=button value="Take Snapshot" onClick="take_snapshot()">
+  	</form>
+    <div id="results">Your captured image will appear here...</div>
+    <div id="label">Label</div>
+  </body>
+
+  <script type="text/javascript" src="https://pixlcore.com/demos/webcamjs/webcam.min.js"></script>
+  <script language="JavaScript">
+		Webcam.set({
+			width: 240,
+			height: 320,
+			image_format: 'jpeg',
+			jpeg_quality: 90
+		});
+    Webcam.set('constraints',{
+        facingMode: "environment"
+    });
+		Webcam.attach( '#my_camera' );
+
+    //const videoTrack = Webcam.stream.getVideoTracks()[0],
+    //settings = videoTrack.getSettings();
+
+    // set values directly from camera
+    //Webcam.set('dest_width', settings.width);
+    //Webcam.set('dest_height', settings.height);
+  </script>
+  <!--<script src={{ url_for('static', filename='script.js') }}></script>-->
+
+	<!-- Code to handle taking the snapshot and displaying it locally -->
+	<script language="JavaScript">
+		function take_snapshot() {
+			// take snapshot and get image data
+			Webcam.snap( function(data_uri) {
+				// display results in page
+				document.getElementById('results').innerHTML =
+					'<h2>Here is your image:</h2>' +
+					'<img src="'+data_uri+'"/>';
+
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", '/what', true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send(JSON.stringify({
+              value: data_uri
+          }));
+
+          xhr.onreadystatechange = function() {
+              if (this.readyState == 4 && this.status == 200) {
+                  res = JSON.parse(this.responseText);
+                  document.getElementById('label').innerHTML =
+          					'<h2>' + res.label + '</h2>';
+              }
+          };
+			});
+		}
+	</script>
+</html>
