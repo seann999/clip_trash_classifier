@@ -1,64 +1,68 @@
 <html>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+  <style>
+    h2 {text-align: center;}
+  </style>
   <head>
     <title>Trashman</title>
   </head>
   <body>
-    <h1>Wassup</h1>
-    <div id="my_camera"></div>
-    <form>
-  		<input type=button value="Take Snapshot" onClick="take_snapshot()">
-  	</form>
-    <div id="results">Your captured image will appear here...</div>
-    <div id="label">Label</div>
+    <h2 style="margin-top:1cm;margin-bottom:1cm;">Garbage Classifier</h2>
+    <div id="my_camera" style="width: 100%; margin:0 auto;"></div>
+    <div style="margin-top:1cm;margin-bottom:1cm;" id="label">Label</div>
   </body>
 
   <script type="text/javascript" src="https://pixlcore.com/demos/webcamjs/webcam.min.js"></script>
   <script language="JavaScript">
-		Webcam.set({
-			width: 240,
-			height: 320,
-			image_format: 'jpeg',
-			jpeg_quality: 90
-		});
+    Webcam.set({
+        width: 240,
+        height: 320,
+        image_format: 'jpeg',
+        jpeg_quality: 90
+    });
     Webcam.set('constraints',{
         facingMode: "environment"
     });
-		Webcam.attach( '#my_camera' );
+	Webcam.attach( '#my_camera' );
 
-    //const videoTrack = Webcam.stream.getVideoTracks()[0],
-    //settings = videoTrack.getSettings();
+    function take_snapshot() {
+      // take snapshot and get image data
+      Webcam.snap( function(data_uri) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", '/classify', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({
+            value: data_uri
+        }));
 
-    // set values directly from camera
-    //Webcam.set('dest_width', settings.width);
-    //Webcam.set('dest_height', settings.height);
+        xhr.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+            res = JSON.parse(this.responseText);
+            var label = '';
+
+            var col = "#000000"
+            if (res.label.includes('non')) {
+              col = '#000099';
+            } else if (res.label.includes('rec')) {
+              col = '#009900';
+            } else if (res.label.includes('large')) {
+              col = '#ff9999';
+            } else if (res.label.includes('comb')) {
+              col = '#ff0000';
+            }
+
+            document.getElementById('label').innerHTML =
+                      '<h2>' + label + res.label + '</h2>' + '<h2>(' + res.msg + ')</h2>';
+            document.getElementById("label").style.color = col;
+          }
+        };
+      });
+    }
+
+    setTimeout(function(){
+      setInterval(function() {
+        take_snapshot();
+      }, 200);
+    }, 1000);
   </script>
-  <!--<script src={{ url_for('static', filename='script.js') }}></script>-->
-
-	<!-- Code to handle taking the snapshot and displaying it locally -->
-	<script language="JavaScript">
-		function take_snapshot() {
-			// take snapshot and get image data
-			Webcam.snap( function(data_uri) {
-				// display results in page
-				document.getElementById('results').innerHTML =
-					'<h2>Here is your image:</h2>' +
-					'<img src="'+data_uri+'"/>';
-
-          var xhr = new XMLHttpRequest();
-          xhr.open("POST", '/what', true);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.send(JSON.stringify({
-              value: data_uri
-          }));
-
-          xhr.onreadystatechange = function() {
-              if (this.readyState == 4 && this.status == 200) {
-                  res = JSON.parse(this.responseText);
-                  document.getElementById('label').innerHTML =
-          					'<h2>' + res.label + '</h2>';
-              }
-          };
-			});
-		}
-	</script>
 </html>
